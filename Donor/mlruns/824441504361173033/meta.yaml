@@ -1,0 +1,7 @@
+artifact_location: file:///Users/adriankazi/Desktop/Deep-Learning/GroupProject/DDPG-and-TD3-for-LunarLander-Environment/Donor/mlruns/824441504361173033
+creation_time: 1773955680772
+experiment_id: '824441504361173033'
+last_update_time: 1773955680772
+lifecycle_stage: active
+name: TARGET_POLICY_NOISE_
+workspace: default

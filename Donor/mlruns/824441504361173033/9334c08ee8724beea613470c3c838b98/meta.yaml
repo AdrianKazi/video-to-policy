@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/adriankazi/Desktop/Deep-Learning/GroupProject/DDPG-and-TD3-for-LunarLander-Environment/Donor/mlruns/824441504361173033/9334c08ee8724beea613470c3c838b98/artifacts
+end_time: 1773965766165
+entry_point_name: ''
+experiment_id: '824441504361173033'
+lifecycle_stage: active
+run_id: 9334c08ee8724beea613470c3c838b98
+run_name: test
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1773965766157
+status: 4
+tags: []
+user_id: adriankazi
