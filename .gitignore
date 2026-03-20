@@ -1,0 +1,18 @@
+# data
+Donor/videos/
+Recipient/data/
+
+# models
+models_saved/
+*.pth
+
+# dataset
+*.pt
+
+# env
+.env
+venv/
+__pycache__/
+
+# mlflow
+mlruns/

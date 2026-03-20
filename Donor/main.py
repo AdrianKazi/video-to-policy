@@ -5,7 +5,10 @@ from test.test import test
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", type=str, required=True, choices=["train", "test"])
+    parser.add_argument("--mode", 
+                        type=str, 
+                        required=True, 
+                        choices=["train", "test"])
     args = parser.parse_args()
 
     if args.mode == "train":
