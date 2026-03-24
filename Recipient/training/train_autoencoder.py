@@ -1,32 +1,12 @@
 import os
 import torch
-import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
-
-# =========================
-# LOSS
-# =========================
-def weighted_mse(x_hat, x):
-    return F.mse_loss(x_hat, x)
+from utils.losses import weighted_mse
+from utils.save_model import save_model
+from evaluation.autoencoder.orig_recon_comparison import autoencoder_reconstruction
 
 
-# =========================
-# SAVE MODEL
-# =========================
-def save_model(model, losses, model_type, model_name="model"):
-    run_dir = os.path.join("runs", f"{model_type}_{model_name}")
-    os.makedirs(run_dir, exist_ok=True)
-
-    torch.save(model.state_dict(), os.path.join(run_dir, "model.pt"))
-    torch.save(losses, os.path.join(run_dir, "losses.pt"))
-
-    return run_dir
-
-
-# =========================
-# TRAIN
-# =========================
 def train_autoencoder(train_dataset, AutoEncoder):
 
     model = AutoEncoder(z_dim=64)
@@ -38,12 +18,11 @@ def train_autoencoder(train_dataset, AutoEncoder):
 
     print('\n[TRAIN AE]\n')
 
-    for epoch in range(50):
+    for epoch in range(40):
         total_loss = 0
 
         for seq in train_dataset:
-            # seq: (T,1,84,84)
-            x = seq  # traktujemy jako batch
+            x = seq
 
             x_hat, _ = model(x)
 
@@ -64,8 +43,7 @@ def train_autoencoder(train_dataset, AutoEncoder):
     run_dir = save_model(
         model,
         losses,
-        'autoencoder',
-        model_name="ae_z64"
+        model_name="autoencoder"
     )
 
     plt.figure()
@@ -80,6 +58,9 @@ def train_autoencoder(train_dataset, AutoEncoder):
     plt.close()
 
     print(f"[PLOT SAVED] {plot_path}")
+
+    autoencoder_reconstruction(model, train_dataset, run_dir)
+
     print('\n[AE TRAINING DONE]\n')
 
     return model, losses
