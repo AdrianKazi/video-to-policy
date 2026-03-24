@@ -20,3 +20,6 @@ venv/
 __pycache__/
 .ipynb_checkpoints/
 
+# runs
+Recipient/runs/
+
