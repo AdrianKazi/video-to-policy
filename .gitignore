@@ -1,0 +1,21 @@
+# data
+Recipient/data/
+Donor/
+*.mp4
+*.meta.json
+
+# artifacts
+mlruns/
+*.pt
+policies/
+pycdc/
+
+# notebooks
+*.ipynb
+
+# env
+.env
+venv/
+__pycache__/
+.ipynb_checkpoints/
+
