@@ -9,6 +9,7 @@ mlruns/
 *.pt
 policies/
 pycdc/
+.DS_Store
 
 # notebooks
 *.ipynb
