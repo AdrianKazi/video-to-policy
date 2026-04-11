@@ -7,7 +7,7 @@ import torch.nn as nn
 import numpy as np
 import torch.optim as optim
 import torch.nn.functional as F
-import gym
+import gymnasium as gym
 from collections import deque
 import random
 import mlflow
@@ -380,7 +380,7 @@ NAME = "DELETE"
 TRAIN_RUN_NAME = f"{NAME}__train"
 
 # %%
-env = gym.make('LunarLanderContinuous-v2', render_mode='none')
+env = gym.make('LunarLanderContinuous-v2')
 state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.shape[0]
 max_action = float(env.action_space.high[0])
@@ -419,7 +419,8 @@ with mlflow.start_run(run_name=TRAIN_RUN_NAME, nested=True):
 
         for step in range(MAX_STEPS):
             action = agent.select_action(state, noise=0.1)
-            next_state, reward, done, _, _ = env.step(action)
+            next_state, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
             agent.store_experience(state, action, reward, next_state, done)
             agent.train()
             episode_reward += reward
@@ -451,7 +452,7 @@ with mlflow.start_run(run_name=TRAIN_RUN_NAME, nested=True):
 # ### TEST
 
 # %%
-import gym
+import gymnasium as gym
 import torch
 import numpy as np
 import mlflow
@@ -496,7 +497,8 @@ with mlflow.start_run(run_name=TEST_RUN_NAME, nested=True):
 
         while True:
             action = agent.select_action(state, noise=0)  # No exploration noise during testing
-            next_state, reward, done, _, _ = env.step(action)
+            next_state, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
             episode_reward += reward
             state = next_state
             if done:

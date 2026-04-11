@@ -4,7 +4,7 @@ import os
 import torch
 import numpy as np
 
-from gym.wrappers import RecordVideo
+from gymnasium.wrappers import RecordVideo
 
 from env.env import make_env, get_env_dims
 from agents.td3 import TD3_Agent

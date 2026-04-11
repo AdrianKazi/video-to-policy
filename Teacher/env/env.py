@@ -1,10 +1,10 @@
 # env/env.py
 
-import gym
+import gymnasium as gym
 
 
 def make_env(render_mode=None):
-    return gym.make("LunarLanderContinuous-v2", render_mode=render_mode)
+    return gym.make("LunarLanderContinuous-v3", render_mode=render_mode)
 
 
 def get_env_dims(env):
