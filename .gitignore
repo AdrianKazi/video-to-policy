@@ -1,12 +1,15 @@
 # data
 Recipient/data/
+Student/data/
 Donor/videos
+Teacher/videos
 *.mp4
 *.meta.json
 
 # artifacts
 mlruns/
 *.pt
+*.pth
 policies/
 pycdc/
 .DS_Store
@@ -23,4 +26,5 @@ __pycache__/
 
 # runs
 Recipient/runs/
+Student/runs/
 
