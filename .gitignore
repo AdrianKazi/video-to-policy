@@ -1,21 +1,17 @@
 # data
-Recipient/data/
-Student/data/
-Donor/videos
 Teacher/videos
+Student/data/frames
 *.mp4
 *.meta.json
 
 # artifacts
 mlruns/
-*.pt
-*.pth
 policies/
 pycdc/
 .DS_Store
 
 # notebooks
-*.ipynb
+Student/notevooks/research/archive/
 
 # env
 .env
@@ -24,7 +20,8 @@ venv/
 __pycache__/
 .ipynb_checkpoints/
 
-# runs
-Recipient/runs/
-Student/runs/
 
+
+
+# Generated Student runs
+Student/runs/
