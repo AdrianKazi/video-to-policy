@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image
 
 from config.paths import FRAMES_DIR, DATASETS_DIR
+from config.gaifo_config import Z_DIM
 from models.autoencoder import AutoEncoder
 
 
@@ -22,7 +23,7 @@ def load_encoder(model_path=None):
 
     print(f"[ENCODER] Loading from {model_path}")
 
-    ae = AutoEncoder(z_dim=64)
+    ae = AutoEncoder(z_dim=Z_DIM)
     ae.load_state_dict(torch.load(model_path, weights_only=True))
     ae.eval()
     return ae
