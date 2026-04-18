@@ -1,0 +1,13 @@
+# Python / env
+.venv
+venv/
+__pycache__/
+
+# Notebook cache
+.ipynb_checkpoints/
+
+# Research archive
+notebooks/research/archive/
+
+# Generated raw frame dumps
+data/frames/**/*.png
