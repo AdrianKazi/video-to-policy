@@ -4,7 +4,7 @@ import torch.nn as nn
 
 class Discriminator(nn.Module):
 
-    def __init__(self, z_dim, hidden_dim=256):
+    def __init__(self, z_dim, hidden_dim=84):
         super().__init__()
 
         # Concat of (z_t, z_{t+1}) → 2 * z_dim
