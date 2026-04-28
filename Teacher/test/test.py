@@ -33,7 +33,7 @@ def test():
 
     with start_run("test"):
 
-        for episode in range(20):
+        for episode in range(MAX_VIDEOS):
 
             state, _ = env.reset()
             ep_reward = 0

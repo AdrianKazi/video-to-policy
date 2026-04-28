@@ -8,15 +8,15 @@ ACTION_DIM = 2
 MAX_ACTION = 1.0
 
 # GAIfO training
-TOTAL_ITERATIONS = 300       # Note: 160 seems to be enough to get a good rough idea
+TOTAL_ITERATIONS = 300        # Note: 160 seems to be enough to get a good rough idea
 ROLLOUT_STEPS = 2048 
-MAX_EP_STEPS = 1000          # Episode length. Leave at 1000
+MAX_EP_STEPS = 900            # Episode length
 
 # Disc.
 DISC_HIDDEN_DIM = 256
 DISC_LR = 1e-4
 DISC_EPOCHS = 5              # Had decent results with 3 and 5
-DISC_BATCH_SIZE = 256
+DISC_BATCH_SIZE = 512
 
 # PPO Policy Parms.
 # Ref: https://github.com/warrenzha/ppo-gae-pytorch/blob/97f7bb338227321b218bea5aa6a16bcc23c8618e/env/config.py#L36POLICY_HIDDEN_DIM = 256
