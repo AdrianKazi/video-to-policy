@@ -11,6 +11,8 @@ from Sequential.train import run_train
 
 
 def _apply_overrides(cfg: SequentialConfig, args: argparse.Namespace) -> None:
+    if getattr(args, "model", None) is not None:
+        cfg.model = args.model
     if getattr(args, "z_dim", None) is not None:
         cfg.z_dim = args.z_dim
     if getattr(args, "seq_len", None) is not None:
@@ -27,6 +29,7 @@ def _apply_overrides(cfg: SequentialConfig, args: argparse.Namespace) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Sequential latent pipeline")
+    parser.add_argument("--model", type=str, default=None, choices=["lstm", "transformer"])
     parser.add_argument("--z-dim", type=int, default=None)
     parser.add_argument("--seq-len", type=int, default=None)
     parser.add_argument("--epochs", type=int, default=None)

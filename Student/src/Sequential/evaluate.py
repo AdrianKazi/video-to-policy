@@ -10,7 +10,7 @@ from Autoencoder.device_util import pick_device
 from Autoencoder.network import AutoEncoder
 from Sequential.config import SequentialConfig
 from Sequential.dataset import build_dataloaders
-from Sequential.network import LatentLSTM
+from Sequential.network import build_model
 from Sequential.train import _latest_ae_checkpoint, _latest_seq_run_dir
 
 
@@ -25,14 +25,18 @@ def run_evaluate(cfg: SequentialConfig, run_dir: Path | None = None, ae_checkpoi
     ae_model.load_state_dict(torch.load(ae_checkpoint, map_location=device))
     ae_model.eval()
 
-    lstm_model = LatentLSTM(
+    model_kwargs = dict(
         z_dim=cfg.z_dim,
         hidden_dim=cfg.hidden_dim,
         num_layers=cfg.num_layers,
         dropout=cfg.dropout,
-    ).to(device)
-    lstm_model.load_state_dict(torch.load(run_dir / "model.pth", map_location=device))
-    lstm_model.eval()
+    )
+    if cfg.model == "transformer":
+        model_kwargs["n_heads"] = cfg.n_heads
+        model_kwargs["max_seq_len"] = cfg.seq_len
+    seq_model = build_model(cfg.model, **model_kwargs).to(device)
+    seq_model.load_state_dict(torch.load(run_dir / "model.pth", map_location=device))
+    seq_model.eval()
 
     train_data = torch.load(run_dir / "seq_train_dataset.pt", map_location="cpu")
     test_data = torch.load(run_dir / "seq_test_dataset.pt", map_location="cpu")
@@ -56,7 +60,7 @@ def run_evaluate(cfg: SequentialConfig, run_dir: Path | None = None, ae_checkpoi
 
         z_input = torch.stack(z_list, dim=1)
         _, z_true = ae_model(x_true)
-        z_pred = lstm_model(z_input)
+        z_pred = seq_model(z_input)
         x_pred = ae_model.decode(z_pred).cpu()
 
     plt.figure(figsize=(6, 3))

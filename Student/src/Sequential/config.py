@@ -28,6 +28,7 @@ class SequentialPaths:
 
 @dataclass
 class SequentialConfig:
+    model: str = "lstm"  # "lstm" or "transformer"
     z_dim: int = 64
     seq_len: int = 32
     test_ratio: float = 0.2
@@ -38,6 +39,7 @@ class SequentialConfig:
     grad_clip: float = 1.0
     hidden_dim: int = 256
     num_layers: int = 2
+    n_heads: int = 4
     dropout: float = 0.1
     device: Optional[str] = None
 

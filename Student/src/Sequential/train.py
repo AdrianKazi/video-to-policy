@@ -12,7 +12,7 @@ from Autoencoder.device_util import pick_device
 from Autoencoder.network import AutoEncoder
 from Sequential.config import SequentialConfig
 from Sequential.dataset import build_dataloaders
-from Sequential.network import LatentLSTM
+from Sequential.network import build_model
 
 
 def _latest_seq_run_dir(cfg: SequentialConfig) -> Path:
@@ -50,19 +50,23 @@ def run_train(cfg: SequentialConfig, run_dir: Path | None = None, ae_checkpoint:
     for p in ae_model.parameters():
         p.requires_grad = False
 
-    lstm_model = LatentLSTM(
+    model_kwargs = dict(
         z_dim=cfg.z_dim,
         hidden_dim=cfg.hidden_dim,
         num_layers=cfg.num_layers,
         dropout=cfg.dropout,
-    ).to(device)
-    opt = torch.optim.Adam(lstm_model.parameters(), lr=cfg.lr)
+    )
+    if cfg.model == "transformer":
+        model_kwargs["n_heads"] = cfg.n_heads
+        model_kwargs["max_seq_len"] = cfg.seq_len
+    seq_model = build_model(cfg.model, **model_kwargs).to(device)
+    opt = torch.optim.Adam(seq_model.parameters(), lr=cfg.lr)
 
     train_losses: list[float] = []
     t0 = time.time()
 
     for epoch in range(1, cfg.epochs + 1):
-        lstm_model.train()
+        seq_model.train()
         ep_loss = 0.0
         n_b = 0
 
@@ -109,12 +113,12 @@ def run_train(cfg: SequentialConfig, run_dir: Path | None = None, ae_checkpoint:
             z_inputs_t = torch.stack(padded_inputs, dim=0)
             z_targets_t = torch.stack(z_targets, dim=0)
 
-            z_pred = lstm_model(z_inputs_t, lengths=input_lengths)
+            z_pred = seq_model(z_inputs_t, lengths=input_lengths)
             loss = F.mse_loss(z_pred, z_targets_t)
 
             opt.zero_grad(set_to_none=True)
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(lstm_model.parameters(), cfg.grad_clip)
+            torch.nn.utils.clip_grad_norm_(seq_model.parameters(), cfg.grad_clip)
             opt.step()
 
             ep_loss += float(loss.item())
@@ -124,9 +128,10 @@ def run_train(cfg: SequentialConfig, run_dir: Path | None = None, ae_checkpoint:
         train_losses.append(mean_ep)
         print(f"[train][seq] epoch {epoch:03d}/{cfg.epochs} mean_loss {mean_ep:.6f} | {time.time() - t0:.1f}s")
 
-    torch.save(lstm_model.state_dict(), run_dir / "model.pth")
+    torch.save(seq_model.state_dict(), run_dir / "model.pth")
     torch.save(train_losses, run_dir / "losses.pt")
     meta = {
+        "model": cfg.model,
         "z_dim": cfg.z_dim,
         "seq_len": cfg.seq_len,
         "predataset_path": str(run_dir / "predataset.pt"),
@@ -143,7 +148,7 @@ def run_train(cfg: SequentialConfig, run_dir: Path | None = None, ae_checkpoint:
     plt.plot(train_losses, lw=2)
     plt.xlabel("epoch")
     plt.ylabel("train loss")
-    plt.title("Sequential LSTM Training Loss")
+    plt.title(f"Sequential {cfg.model.upper()} Training Loss")
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(run_dir / "loss.png", dpi=140)
