@@ -17,6 +17,7 @@ def test():
 
     VIDEO_PATH = "videos"
     MODEL_PATH = "models_saved/actor.pth"
+    POST_LANDING_FRAMES = 100   # 2 sec extra
 
     os.makedirs(VIDEO_PATH, exist_ok=True)
 
@@ -38,6 +39,8 @@ def test():
             state, _ = env.reset()
             ep_reward = 0
             done = False
+            terminated = False
+            truncated = False
 
             while not done:
 
@@ -49,6 +52,13 @@ def test():
 
                 state = next_state
                 ep_reward += reward
+           
+            if terminated and not truncated:
+                noop = np.zeros(env.action_space.shape, dtype=np.float32)
+                for _ in range(POST_LANDING_FRAMES):
+                    _, _, _, truncated, _ = env.step(noop)
+                    if truncated:
+                        break
 
             print(f"Test episode {episode} | reward: {ep_reward}")
             mlflow.log_metric("test_reward", ep_reward, step=episode)
