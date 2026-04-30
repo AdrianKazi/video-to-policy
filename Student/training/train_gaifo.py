@@ -141,6 +141,14 @@ def train_gaifo(autoencoder_path=None):
     run_dir = os.path.join(RUNS_DIR, f"gaifo_policy_{timestamp}")
     os.makedirs(run_dir, exist_ok=True)
 
+    # Copy artifacts for reproducibility
+    import shutil
+    shutil.copy(autoencoder_path, os.path.join(run_dir, "autoencoder.pth"))
+    shutil.copy(expert_path, os.path.join(run_dir, "expert_transitions.pt"))
+    config_src = os.path.join(os.path.dirname(__file__), "../config/gaifo_config.py")
+    shutil.copy(config_src, os.path.join(run_dir, "gaifo_config.py"))
+    print(f"[SAVED] Copied autoencoder, expert transitions, and config to {run_dir}")
+
     print(f"\n[TRAIN GAIfO] Starting {TOTAL_ITERATIONS} iterations\n")
 
     for iteration in range(1, TOTAL_ITERATIONS + 1):

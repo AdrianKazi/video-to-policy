@@ -8,9 +8,9 @@ ACTION_DIM = 2
 MAX_ACTION = 1.0
 
 # GAIfO training
-TOTAL_ITERATIONS = 300        # Note: 160 seems to be enough to get a good rough idea
+TOTAL_ITERATIONS = 300       # Note: 160 seems to be enough to get a good rough idea
 ROLLOUT_STEPS = 2048 
-MAX_EP_STEPS = 900            # Episode length
+MAX_EP_STEPS = 900          # Episode length. Leave at 1000
 
 # Disc.
 DISC_HIDDEN_DIM = 256
