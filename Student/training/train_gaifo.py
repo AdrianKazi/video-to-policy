@@ -129,8 +129,11 @@ def train_gaifo(autoencoder_path=None):
     env = gym.make(ENV_NAME, render_mode="rgb_array")
 
     disc_losses_history = []
+    disc_acc_history = []
     policy_losses_history = []
     eval_rewards_history = []
+    landing_success_history = []
+    reward_variance_history = []
     best_eval_reward = -float("inf")
 
     from datetime import datetime
@@ -222,6 +225,16 @@ def train_gaifo(autoencoder_path=None):
         disc_loss_avg /= DISC_EPOCHS
         disc_losses_history.append(disc_loss_avg)
 
+        # Compute discriminator accuracy
+        with torch.no_grad():
+            n_acc = min(512, expert_z_t.shape[0], learner_z_t.shape[0])
+            acc_expert_idx = torch.randint(0, expert_z_t.shape[0], (n_acc,))
+            acc_learner_idx = torch.randint(0, learner_z_t.shape[0], (n_acc,))
+            expert_acc = (discriminator(expert_z_t[acc_expert_idx], expert_z_t1[acc_expert_idx]) < 0.5).float().mean().item()
+            learner_acc = (discriminator(learner_z_t[acc_learner_idx], learner_z_t1[acc_learner_idx]) > 0.5).float().mean().item()
+            disc_acc = (expert_acc + learner_acc) / 2
+        disc_acc_history.append(disc_acc)
+
         with torch.no_grad():
             gaifo_rewards = discriminator.reward(
                 learner_z_t, learner_z_t1
@@ -286,14 +299,20 @@ def train_gaifo(autoencoder_path=None):
             print(
                 f"[Iter {iteration:>4}/{TOTAL_ITERATIONS}] "
                 f"Disc loss: {disc_loss_avg:.4f} | "
+                f"Disc acc: {disc_acc:.1%} | "
                 f"Policy loss: {policy_loss_avg:.4f} | "
                 f"Avg GAIfO reward: {avg_reward:.4f}"
             )
 
         if iteration % EVAL_INTERVAL == 0:
-            eval_reward = evaluate_policy(policy, device)
+            eval_reward, eval_var, success_rate = evaluate_policy(policy, device)
             eval_rewards_history.append((iteration, eval_reward))
-            print(f"  [EVAL] Iter {iteration} → Avg reward: {eval_reward:.2f}")
+            reward_variance_history.append((iteration, eval_var))
+            landing_success_history.append((iteration, success_rate))
+            print(
+                f"  [EVAL] Iter {iteration} → Avg reward: {eval_reward:.2f} | "
+                f"Variance: {eval_var:.2f} | Landing: {success_rate:.0%}"
+            )
 
             if eval_reward > best_eval_reward:
                 best_eval_reward = eval_reward
@@ -306,8 +325,11 @@ def train_gaifo(autoencoder_path=None):
 
     save_training_plots(
         disc_losses_history,
+        disc_acc_history,
         policy_losses_history,
         eval_rewards_history,
+        landing_success_history,
+        reward_variance_history,
         run_dir
     )
 
@@ -317,9 +339,10 @@ def train_gaifo(autoencoder_path=None):
     return policy, run_dir
 
 def evaluate_policy(policy, device, n_episodes=EVAL_EPISODES):
-    """Run the policy greedily and return average reward."""
+    """Run the policy greedily and return avg reward, variance, and landing success rate."""
     eval_env = gym.make(ENV_NAME)
-    total_reward = 0
+    episode_rewards = []
+    landings = 0
 
     policy.eval()
     for _ in range(n_episodes):
@@ -327,6 +350,7 @@ def evaluate_policy(policy, device, n_episodes=EVAL_EPISODES):
         done = False
         ep_reward = 0
         steps = 0
+        landed = False
 
         while not done:
             state_tensor = torch.FloatTensor(state).unsqueeze(0).to(device)
@@ -335,42 +359,78 @@ def evaluate_policy(policy, device, n_episodes=EVAL_EPISODES):
             state, reward, terminated, truncated, _ = eval_env.step(
                 action.squeeze(0).cpu().numpy()
             )
+            if terminated:
+                landed = True
             done = terminated or truncated
             ep_reward += reward
             steps += 1
             if steps >= MAX_EP_STEPS:
                 break
 
-        total_reward += ep_reward
+        episode_rewards.append(ep_reward)
+        if landed and ep_reward > 0:
+            landings += 1
 
     eval_env.close()
     policy.train()
 
-    return total_reward / n_episodes
+    avg_reward = sum(episode_rewards) / len(episode_rewards)
+    variance = np.var(episode_rewards)
+    success_rate = landings / n_episodes
+    return avg_reward, variance, success_rate
 
-def save_training_plots(disc_losses, policy_losses, eval_rewards, run_dir):
+def save_training_plots(disc_losses, disc_accs, policy_losses, eval_rewards,
+                        landing_success, reward_variance, run_dir):
     """Save training curves."""
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
 
-    axes[0].plot(disc_losses)
-    axes[0].set_title("Discriminator Loss")
-    axes[0].set_xlabel("Iteration")
-    axes[0].set_ylabel("BCE Loss")
-    axes[0].grid(True)
+    axes[0, 0].plot(disc_losses)
+    axes[0, 0].set_title("Discriminator Loss")
+    axes[0, 0].set_xlabel("Iteration")
+    axes[0, 0].set_ylabel("BCE Loss")
+    axes[0, 0].grid(True)
 
-    axes[1].plot(policy_losses)
-    axes[1].set_title("Policy Loss (PPO)")
-    axes[1].set_xlabel("Iteration")
-    axes[1].set_ylabel("Loss")
-    axes[1].grid(True)
+    axes[0, 1].plot(disc_accs)
+    axes[0, 1].axhline(y=0.5, color="r", linestyle="--", alpha=0.5, label="50% (equilibrium)")
+    axes[0, 1].set_title("Discriminator Accuracy")
+    axes[0, 1].set_xlabel("Iteration")
+    axes[0, 1].set_ylabel("Accuracy")
+    axes[0, 1].set_ylim(0, 1)
+    axes[0, 1].legend()
+    axes[0, 1].grid(True)
+
+    axes[0, 2].plot(policy_losses)
+    axes[0, 2].set_title("Policy Loss (PPO)")
+    axes[0, 2].set_xlabel("Iteration")
+    axes[0, 2].set_ylabel("Loss")
+    axes[0, 2].grid(True)
 
     if eval_rewards:
         iters, rewards = zip(*eval_rewards)
-        axes[2].plot(iters, rewards, marker="o")
-        axes[2].set_title("Evaluation Reward")
-        axes[2].set_xlabel("Iteration")
-        axes[2].set_ylabel("Avg Reward")
-        axes[2].grid(True)
+        axes[1, 0].plot(iters, rewards, marker="o")
+        axes[1, 0].set_title("Evaluation Reward")
+        axes[1, 0].set_xlabel("Iteration")
+        axes[1, 0].set_ylabel("Avg Reward")
+        axes[1, 0].grid(True)
+
+    if landing_success:
+        iters, rates = zip(*landing_success)
+        axes[1, 1].plot(iters, [r * 100 for r in rates], marker="s", color="green")
+        axes[1, 1].axhline(y=80, color="r", linestyle="--", alpha=0.5, label="80% target")
+        axes[1, 1].set_title("Landing Success Rate")
+        axes[1, 1].set_xlabel("Iteration")
+        axes[1, 1].set_ylabel("Success %")
+        axes[1, 1].set_ylim(0, 105)
+        axes[1, 1].legend()
+        axes[1, 1].grid(True)
+
+    if reward_variance:
+        iters, variances = zip(*reward_variance)
+        axes[1, 2].plot(iters, variances, marker="^", color="orange")
+        axes[1, 2].set_title("Reward Variance")
+        axes[1, 2].set_xlabel("Iteration")
+        axes[1, 2].set_ylabel("Var(episode rewards)")
+        axes[1, 2].grid(True)
 
     plt.tight_layout()
     plt.savefig(os.path.join(run_dir, "gaifo_training.png"), dpi=150)
