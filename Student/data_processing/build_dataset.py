@@ -6,10 +6,8 @@ import random
 from config.paths import FRAMES_DIR, DATASETS_DIR
 
 SAVE_ROOT = DATASETS_DIR
-TOTAL_FRAC = 0.5
+TOTAL_FRAC = 0.2
 STRIDE = 1
-# TOTAL_FRAC = 0.2
-# STRIDE = 20
 
 
 def build_sequences(input_dir, episodes):
