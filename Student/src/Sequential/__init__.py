@@ -1,1 +1,0 @@
-"""Minimal sequential latent pipeline."""
