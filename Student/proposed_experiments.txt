@@ -1,5 +1,0 @@
-Done    Resolution Experiment
-    - how images look with smaller resolutions
-
-How small sample we need to train good autoencoder?
-    - we need ideally 1 video to teach model everything
