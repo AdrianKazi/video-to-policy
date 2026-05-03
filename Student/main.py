@@ -7,10 +7,12 @@ sys.path.insert(0, str(_ROOT / "src"))
 
 from Autoencoder.cli import main as autoencoder_main  # noqa: E402
 from Sequential.cli import main as sequential_main  # noqa: E402
+from IDM.cli import main as idm_main  # noqa: E402
+from BCO.cli import main as bco_main  # noqa: E402
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        raise SystemExit("Usage: python main.py [autoencoder|sequential] ...")
+        raise SystemExit("Usage: python main.py [autoencoder|sequential|idm|bco] ...")
 
     target = sys.argv[1].lower()
     argv = sys.argv[2:]
@@ -19,5 +21,9 @@ if __name__ == "__main__":
         autoencoder_main(argv)
     elif target in {"sequential", "seq"}:
         sequential_main(argv)
+    elif target == "idm":
+        idm_main(argv)
+    elif target == "bco":
+        bco_main(argv)
     else:
-        raise SystemExit(f"Unknown pipeline: {target}. Use 'autoencoder' or 'sequential'.")
+        raise SystemExit(f"Unknown pipeline: {target}. Use 'autoencoder', 'sequential', 'idm', or 'bco'.")

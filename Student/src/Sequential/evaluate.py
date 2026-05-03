@@ -1,5 +1,4 @@
 """Quick qualitative evaluation for the sequential model."""
-from __future__ import annotations
 
 from pathlib import Path
 

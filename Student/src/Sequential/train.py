@@ -1,5 +1,4 @@
 """Train the sequential latent predictor inside a self-contained run folder."""
-from __future__ import annotations
 
 import time
 from pathlib import Path
