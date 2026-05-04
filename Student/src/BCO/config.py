@@ -24,13 +24,14 @@ class BCOConfig:
     bc_batch_size: int = 256
 
     # data collection
-    n_random_episodes: int = 2000
+    n_random_episodes: int = 5000
     n_rollout_episodes: int = 200
     n_eval_episodes: int = 50
     max_steps: int = 1000
 
     # BCO loop
-    n_iterations: int = 3
+    n_iterations: int = 10
+    patience: int = 2
 
     test_ratio: float = 0.2
     seed: int = 42

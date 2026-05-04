@@ -17,12 +17,13 @@ from IDM.metrics import compute_metrics
 
 def _collect_random_rollouts(n_episodes: int, max_steps: int = 1000):
     env = gym.make("LunarLanderContinuous-v3")
+    rng = np.random.default_rng(42)
     states, actions, bounds = [], [], [0]
     for ep in range(n_episodes):
-        obs, _ = env.reset()
+        obs, _ = env.reset(seed=int(rng.integers(1e9)))
         ep_s, ep_a = [], []
         for _ in range(max_steps):
-            action = env.action_space.sample()
+            action = rng.uniform(-1, 1, size=env.action_space.shape).astype(np.float32)
             ep_s.append(obs.copy())
             ep_a.append(action.copy())
             obs, _, term, trunc, _ = env.step(action)
@@ -116,6 +117,9 @@ def _train_bc(states, actions, cfg: BCOConfig):
     train_dl = DataLoader(
         TensorDataset(states[idx[n_test:]], actions[idx[n_test:]]),
         batch_size=cfg.bc_batch_size, shuffle=True)
+    test_dl = DataLoader(
+        TensorDataset(states[idx[:n_test]], actions[idx[:n_test]]),
+        batch_size=cfg.bc_batch_size)
 
     opt = torch.optim.Adam(bc.parameters(), lr=cfg.bc_lr, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=cfg.bc_epochs)
@@ -136,7 +140,15 @@ def _train_bc(states, actions, cfg: BCOConfig):
         if epoch % 20 == 0 or epoch == 1:
             print(f"  [BC] epoch {epoch:03d}/{cfg.bc_epochs} "
                   f"train {ep_loss / max(n_b, 1):.6f}")
-    return bc
+
+    bc.eval()
+    te_loss, te_nb = 0.0, 0
+    with torch.no_grad():
+        for sb, ab in test_dl:
+            te_loss += F.mse_loss(bc(sb), ab).item()
+            te_nb += 1
+    bc_test_mse = te_loss / max(te_nb, 1)
+    return bc, bc_test_mse
 
 
 def _eval_bc(bc: StateBCPolicy, n_episodes: int, max_steps: int = 1000):
@@ -183,6 +195,7 @@ def run_bco(cfg: BCOConfig, expert_data_path: Path | None = None) -> Path:
     idm_s, idm_a, idm_b = rand_s, rand_a, rand_b
     results = []
     best_bc, best_reward = None, -float("inf")
+    no_improve = 0
 
     for it in range(cfg.n_iterations):
         print(f"\n{'='*60}")
@@ -203,7 +216,8 @@ def run_bco(cfg: BCOConfig, expert_data_path: Path | None = None) -> Path:
 
         # train BC
         print(f"\n  Training BC on {len(pl_s)} pseudo-labeled pairs...")
-        bc = _train_bc(pl_s, pl_a, cfg)
+        bc, bc_test_mse = _train_bc(pl_s, pl_a, cfg)
+        print(f"  BC test MSE: {bc_test_mse:.6f}")
 
         # evaluate
         rews = _eval_bc(bc, cfg.n_eval_episodes, cfg.max_steps)
@@ -213,10 +227,14 @@ def run_bco(cfg: BCOConfig, expert_data_path: Path | None = None) -> Path:
         if avg_r > best_reward:
             best_reward = avg_r
             best_bc = bc
+            no_improve = 0
+        else:
+            no_improve += 1
 
         result = {
             "iteration": it + 1,
             "pl_metrics": pl_metrics,
+            "bc_test_mse": bc_test_mse,
             "reward_mean": avg_r,
             "reward_std": std_r,
         }
@@ -227,6 +245,11 @@ def run_bco(cfg: BCOConfig, expert_data_path: Path | None = None) -> Path:
         it_dir.mkdir(exist_ok=True)
         torch.save(bc.state_dict(), it_dir / "policy.pth")
         torch.save(idm.state_dict(), it_dir / "idm.pth")
+
+        # check convergence
+        if no_improve >= cfg.patience:
+            print(f"\n  Converged (no improvement for {cfg.patience} iterations)")
+            break
 
         # collect on-policy data for IDM retraining
         if it < cfg.n_iterations - 1:
