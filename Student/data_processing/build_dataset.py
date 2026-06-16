@@ -7,7 +7,7 @@ from config.paths import FRAMES_DIR, DATASETS_DIR
 
 SAVE_ROOT = DATASETS_DIR
 TOTAL_FRAC = 0.2
-STRIDE = 20
+STRIDE = 1
 
 
 def build_sequences(input_dir, episodes):

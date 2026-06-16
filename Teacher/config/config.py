@@ -23,6 +23,9 @@ MAX_EPISODES = 1000
 MAX_STEPS = int(1e3)
 TARGET_REWARD = 200
 
+# Testing
+MAX_VIDEOS = 20
+
 # Paths
 MODEL_DIR = "./models_saved"
 VIDEO_DIR = "./videos"
